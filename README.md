@@ -17,8 +17,6 @@ Key Results:
 Files in this repository:
 
  - `xgboost_code.py` -- code used to create and validate the AI model described in the study;
- - `compare_auc_delong_xu.py` -- comparing ROCs with DeLong test for the significance of the differences;
- - `roc_plots.py` -- code used to visualize the ROCs;
  - `env_linux.yaml` -- Anaconda Python environment for unix-based systems;
  - `env_windows.yaml` -- Anaconda Python environment for MS Windows system.
 

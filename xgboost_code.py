@@ -865,25 +865,3 @@ def eval_static(dataframes_list, preds, fis, set_id=1, label="", id_col=""):
                                 hyperparams='univariable model')
     print("Internal Test AUROC for %s: %f" % (label, roc_auc))
     return preds, fis
-
-
-def reset_params():
-    """
-    Returns reset fixed and grid-search parameters for XGBoost
-
-    Parameters:
-    ---------------
-    None.
-
-    Returns:
-    test_idx (pandas Series) - Series of indicies from test data points
-    y_test (pandas Series) - Series of test true values
-    y_preds (numpy array) - a numpy array of shape array-like of shape (n_samples, 1)
-        with the probability of each data example being of a given class.
-    gr (object) - grid search CB object
-    ---------------
-    """
-    params_fixed = {}
-    params_grid = {}
-
-    return params_fixed, params_grid

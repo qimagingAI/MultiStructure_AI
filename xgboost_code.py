@@ -84,17 +84,10 @@ def eval_xgboost_kfold_grid_clean(dataframes_list, preds, fis, params, set_id=1,
     for hyper_idx, _ in enumerate(hyperparams_list):
         hyperparams_perf[hyper_idx] = []
     print("Starting Internal %d-fold validation for Set:%d" % (folds, set_id))
-    # run all folds to find best hyperparameters
 
-    import ipdb;
-    ipdb.set_trace()
-    print(X.shape)
-    print(y.shape)
     for i, (train_index, test_index) in enumerate(enum, start=1):
-        # t0 = time.time()
         print("Starting Split %d" % (i))
         X_train_val, y_train_val = X.iloc[train_index], y.iloc[train_index]
-        # X_train_idx, X_val_idx, _, _ = train_test_split(X_train_val.index, y_train_val.to_numpy(), test_size=1.0/(folds-1), random_state=seed)
         X_train_idx, X_val_idx, _, _ = train_test_split(X_train_val.index, y_train_val.to_numpy(), test_size=0.1,
                                                         random_state=seed)
         X_train, X_val, y_train, y_val = X.loc[X_train_idx].to_numpy(), X.loc[X_val_idx].to_numpy(), y.loc[
@@ -102,12 +95,8 @@ def eval_xgboost_kfold_grid_clean(dataframes_list, preds, fis, params, set_id=1,
         idxs_fold = idxs.loc[X_val_idx]
         # random under sampling if wanted
         if under_sample:
-            # rus = imblearn.under_sampling.RandomUnderSampler(sampling_strategy='majority',random_state=seed)
             rus = imblearn.under_sampling.RandomUnderSampler(sampling_strategy=0.2, random_state=seed)
             X_train, y_train = rus.fit_resample(X_train, y_train)
-        # evaluate all hyperparameter combinations for this fold
-        best_auc = -np.inf
-        # best_y_preds, best_fi, best_params_idx, best_params = None, None, None, None
         for params_idx, next_params in enumerate(hyperparams_list):
             # create model, fit, predict, log predictions, log FIs
             model = XGBClassifier(**next_params, use_label_encoder=False)
@@ -125,11 +114,7 @@ def eval_xgboost_kfold_grid_clean(dataframes_list, preds, fis, params, set_id=1,
             hyperparams_perf[params_idx].append(this_auc)
             print(
                 f"Fold: {i}, Hyperparams Index: {params_idx}, AUC Performance: {this_auc}, \n\t\tHyperparams: {next_params}")
-            # if this_auc > best_auc:
-            #    best_y_preds, best_fi, best_params_idx, best_params, best_model, best_auc = \
-            #        y_preds, fi, params_idx, next_params, model, this_auc
 
-    # identify best hyperparameters            
     best_hyperparams_avg_perf = -np.inf
     best_hyper_idx = None
     for check_hyper_idx in list(hyperparams_perf.keys()):
@@ -183,9 +168,6 @@ def eval_xgboost_kfold_grid_clean(dataframes_list, preds, fis, params, set_id=1,
             best_auc = this_auc
             best_model = model
         print(f"Best fold: {best_fold}, Best AUC: {best_auc}")
-        # print(f"\tbest params: index ({best_hyper_idx}) - {best_params}")
-        # print(f"\tbest estimator: {model}")
-        # print("Fold time: ", time.time()-t0)
 
     return preds, fis, hyperparams_list[best_hyper_idx], best_model
 
@@ -493,7 +475,6 @@ def eval_xgboost_test(dataframes_list, preds, fis, params_fixed, params_grid, se
                       n_jobs=4,
                       verbose=0)
     if under_sample:
-        # rus = imblearn.under_sampling.RandomUnderSampler(sampling_strategy='majority',random_state=seed)
         rus = imblearn.under_sampling.RandomUnderSampler(sampling_strategy=0.2, random_state=seed)
         X, y = rus.fit_resample(X, y)
     mf.fit(X, y, verbose=0)
@@ -514,10 +495,8 @@ def eval_xgboost_test(dataframes_list, preds, fis, params_fixed, params_grid, se
 
     y_preds = best_estimator.predict_proba(X_ext.to_numpy())[:, 1]
 
-    # def append_predictions_DF(self, indices, y_true, y_score, label, censoring=None, optional_dict=None,fold=0,hyperparams_idx=0,fus=None):
     preds.append_predictions_DF(idxs_ext, y_ext, y_preds, label=label, fold=-1)
     roc_auc = roc_auc_score(y_ext, y_preds)
-    print("Test AUROC: %f" % (roc_auc))
     return preds, fis
 
 
@@ -547,10 +526,6 @@ def eval_flaml_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, lab
     else:
         raise ValueError(f"Improper number of folds: {folds}")
 
-    # best_params = mf.best_params_
-    # Best Params Set From K-Fold Grid Search: {'colsample_bylevel': 0.3, 'colsample_bytree': 0.3, 'eta': 0.001, 'gamma': 0.25, 'max_depth': 4, 'min_child_weight': 5, 'n_estimators': 250, 
-    # params_fixed.update(best_params)
-
     i = 0
     print("Starting Internal %d-fold validation for Set:%d" % (folds, set_id))
     for train_index, test_index in enum:
@@ -561,8 +536,6 @@ def eval_flaml_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, lab
                                                         test_size=1.0 / (folds - 1), random_state=seed)
         X_train, X_val, y_train, y_val = X.loc[X_train_idx], X.loc[X_val_idx], y.loc[X_train_idx], y.loc[X_val_idx]
         X_test, y_test = X.iloc[test_index], y.iloc[test_index]
-        # X_train, X_test = X.loc[train_index],  X.loc[test_index]
-        # y_train, y_test = y.loc[train_index], y.loc[test_index]
         idxs_fold = idxs.loc[test_index]
 
         mf = AutoML()
@@ -577,7 +550,6 @@ def eval_flaml_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, lab
         print('Training duration of best run: {0:.4g}'.format(mf.best_config_train_time))
 
         y_preds = mf.predict_proba(X_test.to_numpy())[:, 1]
-        # def append_predictions_DF(self, indices, y_true, y_score, label, censoring=None, optional_dict=None,fold=0,hyperparams_idx=0,fus=None):
         preds.append_predictions_DF(idxs_fold, y_test, y_preds, label=label, fold=i)
         roc_auc = roc_auc_score(y_test, y_preds)
         print("Fold %d Test AUROC: %f" % (i, roc_auc))
@@ -642,7 +614,6 @@ def eval_flaml_test(dataframes_list, preds, fis, automl_settings, set_id=1, labe
     print('Training duration of best run: {0:.4g}'.format(mf.best_config_train_time))
 
     y_preds = mf.predict_proba(X_ext.to_numpy())[:, 1]
-    # def append_predictions_DF(self, indices, y_true, y_score, label, censoring=None, optional_dict=None,fold=0,hyperparams_idx=0,fus=None):
 
     if save_model:
         # pickle and save the automl object
@@ -683,10 +654,6 @@ def eval_optuna_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, la
     else:
         raise ValueError(f"Improper number of folds: {folds}")
 
-    # best_params = mf.best_params_
-    # Best Params Set From K-Fold Grid Search: {'colsample_bylevel': 0.3, 'colsample_bytree': 0.3, 'eta': 0.001, 'gamma': 0.25, 'max_depth': 4, 'min_child_weight': 5, 'n_estimators': 250, 
-    # params_fixed.update(best_params)
-
     i = 0
     features = list(X)
     print("Starting Internal %d-fold validation for Set:%d" % (folds, set_id))
@@ -698,8 +665,6 @@ def eval_optuna_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, la
                                                         test_size=1.0 / (folds - 1), random_state=42)
         X_train, X_val, y_train, y_val = X.loc[X_train_idx], X.loc[X_val_idx], y.loc[X_train_idx], y.loc[X_val_idx]
         X_test, y_test = X.iloc[test_index], y.iloc[test_index]
-        # X_train, X_test = X.loc[train_index],  X.loc[test_index]
-        # y_train, y_test = y.loc[train_index], y.loc[test_index]
         idxs_fold = idxs.loc[test_index]
         # new optuna implementation
         if automl_settings['objective_func'] == 'log_loss':
@@ -710,41 +675,21 @@ def eval_optuna_kfold(dataframes_list, preds, fis, automl_settings, set_id=1, la
             raise ValueError(f"unrecognized objective: {automl_settings['objective_func']}")
         ot = OptunaTest(X_train, X_val, y_train, y_val, features, automl_settings['objective_func'])
         study.optimize(ot.objective, n_trials=automl_settings['n_trials'], timeout=automl_settings['timeout'])
-        # study.optimize(ot.objective, n_trials=automl_settings['n_trials'], timeout=automl_settings['timeout'], callbacks=[ot.callback])
-        print("Number of finished trials: ", len(study.trials))
-        print("Best trial:")
         trial = study.best_trial
         best_params = trial.params
-        print("  Value: {}".format(trial.value))
-        print("  Params: {}".format(best_params))
-        # mf = study.user_attrs["best_booster"] # booster() from trained xgboost model
-        # dtrain=xgb.DMatrix(X_train, label=y_train, feature_names=features)
-        # mf=xgb.train(best_params, dtrain)
         mf = XGBClassifier(**best_params, use_label_encoder=False)
         mf.fit(X_train_val, y_train_val)
-        print(mf)
         fi_dict = mf.get_booster().get_score()
-        print('FEATURE IMPORTANCES:')
-        print(fi_dict)
         fi = [fi_dict[x] for x in features if x in list(fi_dict.keys())]
         fi_feats = [x for x in features if x in list(fi_dict.keys())]
         fis.append_importances_DF(label, fi_feats, fi, fold=i)
-        # print('Best ML learner:',best_estimator)
-        # print(f"Best Params Set From K-Fold Grid Search: {best_params}")
-        # y_preds = mf.predict(X_test.to_numpy())[:,1]
-        # dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=features)
-        # dtest =  xgb.DMatrix(X_test, feature_names=features)
-        # y_preds = mf.predict(dtest)
         y_preds = mf.predict_proba(X_test)[:, 1]
 
         preds.append_predictions_DF(idxs_fold, y_test, y_preds, label=label, fold=i)
         roc_auc = roc_auc_score(y_test, y_preds)
-        print("Fold %d Test AUROC: %f" % (i, roc_auc))
         t1 = time.time()
-        print(f"Fold time: {t1 - t0}")
         i += 1
         if save_model:
-            # pickle and save the automl object
             if save_model_pth[-1] == '/': save_model_pth = save_model_pth[:-1]
             f_name = save_model_pth + '/automl_model_set_' + str(set_id) + '_fold_' + str(i) + '.pkl'
             with open(f_name, 'wb') as f:
@@ -762,7 +707,6 @@ def eval_optuna_test(dataframes_list, preds, fis, automl_settings, set_id=1, lab
     X, y, X_ext, y_ext = dataframes_list[0], dataframes_list[1], dataframes_list[2], dataframes_list[3]
 
     features = list(X)
-    # drop ID Col if present: internal
     if id_col in list(X):
         idxs_train = X.loc[:, id_col]
         X.drop(labels=id_col, axis=1, inplace=True)
@@ -800,8 +744,6 @@ def eval_optuna_test(dataframes_list, preds, fis, automl_settings, set_id=1, lab
         t0 = time.time()
         print("Starting external validation %d" % (i))
         X_train, y_train = X.iloc[train_index], y.iloc[train_index]
-        # X_train_idx, X_val_idx, _, _ = train_test_split(X_train_val.index, y_train_val.to_numpy(), test_size=1.0/(folds-1), random_state=42)
-        # X_train, X_val, y_train, y_val = X.loc[X_train_idx], X.loc[X_val_idx], y.loc[X_train_idx], y.loc[X_val_idx]
         X_val, y_val = X.iloc[test_index], y.iloc[test_index]
         idxs_fold = idxs.loc[test_index]
 
@@ -809,16 +751,12 @@ def eval_optuna_test(dataframes_list, preds, fis, automl_settings, set_id=1, lab
         study = optuna.create_study(direction='minimize')
         ot = OptunaTest(X_train, X_val, y_train, y_val, features)
         study.optimize(ot.objective, n_trials=automl_settings['n_trials'], timeout=automl_settings['timeout'])
-        # study.optimize(ot.objective, n_trials=automl_settings['n_trials'], timeout=automl_settings['timeout'], callbacks=[ot.callback])
         print("Number of finished trials: ", len(study.trials))
         print("Best trial:")
         trial = study.best_trial
         best_params = trial.params
         print("  Value: {}".format(trial.value))
         print("  Params: {}".format(best_params))
-        # mf = study.user_attrs["best_booster"] # booster() from trained xgboost model
-        # dtrain=xgb.DMatrix(X_train, label=y_train, feature_names=features)
-        # mf=xgb.train(best_params, dtrain)
         mf = XGBClassifier(**best_params, use_label_encoder=False)
         mf.fit(X, y)
         print(mf)
@@ -828,12 +766,6 @@ def eval_optuna_test(dataframes_list, preds, fis, automl_settings, set_id=1, lab
         fi = [fi_dict[x] for x in features if x in list(fi_dict.keys())]
         fi_feats = [x for x in features if x in list(fi_dict.keys())]
         fis.append_importances_DF(label, fi_feats, fi, fold=i)
-        # print('Best ML learner:',best_estimator)
-        # print(f"Best Params Set From K-Fold Grid Search: {best_params}")
-        # y_preds = mf.predict(X_test.to_numpy())[:,1]
-        # dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=features)
-        # dtest =  xgb.DMatrix(X_test, feature_names=features)
-        # y_preds = mf.predict(dtest)
         y_preds = mf.predict_proba(X_ext)[:, 1]
         t1 = time.time()
         print(f"Fold time: {t1 - t0}")
@@ -854,10 +786,6 @@ def eval_optuna_test(dataframes_list, preds, fis, automl_settings, set_id=1, lab
 
 class OptunaTest():
     def __init__(self, train_x, valid_x, train_y, valid_y, features, objective_func):
-        # self.train_x = train_x.astype('float')
-        # self.valid_x = valid_x.astype('float')
-        # self.train_y = train_y.astype('float')
-        # self.valid_y = valid_y.astype('float')
         self.train_x = train_x
         self.valid_x = valid_x
         self.train_y = train_y
@@ -871,47 +799,11 @@ class OptunaTest():
     def objective(self, trial):
         logger = optuna.logging.get_logger("optuna")
         logger.setLevel(optuna.logging.ERROR)
-        # (data, target) = sklearn.datasets.load_breast_cancer(return_X_y=True)
-        # train_x, valid_x, train_y, valid_y = train_test_split(data, target, test_size=0.25)
         dtrain = xgb.DMatrix(self.train_x, label=self.train_y, feature_names=self.features)
         dvalid = xgb.DMatrix(self.valid_x, label=self.valid_y, feature_names=self.features)
 
-        param = {
-            "verbosity": 0,
-            "objective": "binary:logistic",
-            # use exact for small dataset.
-            # "tree_method": "exact",
-            # defines booster, gblinear for linear functions.
-            # "booster": trial.suggest_categorical("booster", ["gbtree", "gblinear", "dart"]),
-            "booster": trial.suggest_categorical("booster", ["gbtree", "dart"]),
-            # L2 regularization weight.
-            "lambda": trial.suggest_float("lambda", 1e-8, 1.0, log=True),
-            # L1 regularization weight.
-            "alpha": trial.suggest_float("alpha", 1e-8, 1.0, log=True),
-            # sampling ratio for training data.
-            "subsample": trial.suggest_float("subsample", 0.1, 1.0),
-            # sampling according to each tree.
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.1, 1.0),
-            'n_estimators': trial.suggest_int('n_estimators', 500, 2000),
-            'learning_rate': trial.suggest_float('learning_rate', 5e-4, 1e-1),
-            'scale_pos_weight': trial.suggest_float("scale_pos_weight", 1e-1, 10),
+        param = {}
 
-        }
-        if param["booster"] in ["gbtree", "dart"]:
-            # maximum depth of the tree, signifies complexity of the tree.
-            param["max_depth"] = trial.suggest_int("max_depth", 2, 10, step=2)
-            # minimum child weight, larger the term more conservative the tree.
-            param["min_child_weight"] = trial.suggest_int("min_child_weight", 2, 10)
-            param["eta"] = trial.suggest_float("eta", 1e-8, 1.0, log=True)
-            # defines how selective algorithm is.
-            param["gamma"] = trial.suggest_float("gamma", 1e-8, 1.0, log=True)
-            param["grow_policy"] = trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"])
-
-        if param["booster"] == "dart":
-            param["sample_type"] = trial.suggest_categorical("sample_type", ["uniform", "weighted"])
-            param["normalize_type"] = trial.suggest_categorical("normalize_type", ["tree", "forest"])
-            param["rate_drop"] = trial.suggest_float("rate_drop", 1e-8, 1.0, log=True)
-            param["skip_drop"] = trial.suggest_float("skip_drop", 1e-8, 1.0, log=True)
         if self.objective_func == 'roc':
             num_boost_round = 500
             evallist = [(dvalid, 'validation')]
@@ -936,28 +828,10 @@ class OptunaTest():
 
 
 def objective(trial, dtrain, dval, y_val):
-    param = {'objective': 'binary:logistic',
-             'eval_metric': 'logloss',
-             'booster': 'gbtree',
-             'max_depth': trial.suggest_int("max_depth", 2, 8),
-             'eta': trial.suggest_loguniform("eta", 1e-8, 0.5),
-             'min_child_weight': trial.suggest_float("min_child_weight", 0.5, 3),
-             'colsample_bytree': trial.suggest_float("colsample_bytree", 0.4, 0.8),
-             'subsample': trial.suggest_float("subsample", 0.4, 0.8),
-             'grow_policy': trial.suggest_categorical("grow_policy", ["depthwise", "lossguide"]),
-             'scale_pos_weight': trial.suggest_loguniform("scale_pos_weight", 1e-8, 10),
-             'lambda': trial.suggest_float("lambda", 0, 10),
-             'alpha': trial.suggest_float("alpha", 0, 10),
-             'num_parallel_tree': 1,
-             'gamma': trial.suggest_float("gamma", 0, 1.0)
-             }
+    param = {}
     num_boost_round = 500
     evallist = [(dval, 'validation')]
 
-    #     pruning_callback = optuna.integration.XGBoostPruningCallback(trial, "validation-auc")
-    #     model = xgb.train(params = param, dtrain = dtrain, evals=evallist, num_boost_round = 50, 
-    #                       early_stopping_rounds=10, callbacks=[pruning_callback])
-    #     preds = model.predict(dval, ntree_limit=model.best_ntree_limit)
     model = xgb.train(params=param, dtrain=dtrain, evals=evallist,
                       num_boost_round=num_boost_round, early_stopping_rounds=10)
     preds = model.predict(dval, ntree_limit=model.best_ntree_limit)
@@ -1009,35 +883,7 @@ def reset_params():
     gr (object) - grid search CB object
     ---------------
     """
-    params_fixed = {
-        'objective': 'binary:logistic',
-        'nthread': 28,
-        'eval_metric': 'auc',
-        'subsample': 0.8,
-        'tree_method': 'hist',  # gpu_hist for GPU accel hist for CPU
-        # 'scale_pos_weight': 5,
-        'verbosity': 0,
-        'booster': 'gbtree',
-    }
-    # params_grid = {
-    #         'eta': [0.01],
-    #         'gamma': [10],
-    #         'min_child_weight': [6],
-    #         'max_depth': [6],
-    #         'subsample': [0.8],
-    #         'colsample_bytree': [0.6],
-    #         # 'colsample_bylevel': [0.3],
-    #         'n_estimators':[500,600],
-    #         }
-    params_grid = {
-        'eta': [0.01, 0.1, 0.3],
-        'gamma': [0.5, 0],
-        'min_child_weight': [4],
-        'max_depth': [4, 6],
-        'subsample': [0.3],
-        'colsample_bytree': [0.3],
-        'colsample_bylevel': [0.3],
-        'n_estimators': [1500, 2000, 2500],
-    }
+    params_fixed = {}
+    params_grid = {}
 
     return params_fixed, params_grid

@@ -20,9 +20,15 @@ Files in this repository:
  - `env_linux.yaml` -- Anaconda Python environment for unix-based systems;
  - `env_windows.yaml` -- Anaconda Python environment for MS Windows system.
 
+The code used to perform the analyzes described in the Radiology article depends also on the following open source repositories:
+
+The TotalSegmentator code is publicly available (https://github.com/wasserth/TotalSegmentator), cLSTM code is publicly available under a Creative Commons BY-NC license at https://doi.org/10.5281/zenodo.10632288, PyRadiomics code is available at https://pyradiomics.readthedocs.io/en/latest/, and the XGBoost Python implementation is available at https://xgboost.readthedocs.io/en/stable/python/. 
 
 ---
 
 Graphical abstract of the article:
 
 ![images/Figure 1_Revision.png](images/Figure%201_Revision.png)
+
+
+---
